@@ -1,13 +1,13 @@
 import SwiftUI
 
-struct DrawingView: View {
-    @ObservedObject var connectivity: ConnectivityManager
+struct DrawingView<Manager: ConnectivityManaging>: View {
+    @ObservedObject var connectivity: Manager
 
     @State private var trackerLocation: CGPoint? = nil
     @State private var trackerVisible = false
 
     var body: some View {
-        ZStack {
+        Group {
             if connectivity.isConnected {
                 TouchCaptureView(
                     connectivityManager: connectivity,
@@ -19,13 +19,6 @@ struct DrawingView: View {
                         trackerVisible = false
                     }
                 )
-                .padding(12)
-                .overlay(alignment: .topLeading) {
-                    Label("Zone active", systemImage: "pencil.tip")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .padding(8)
-                }
                 .overlay {
                     if trackerVisible, let point = trackerLocation {
                         ZStack {
@@ -41,6 +34,13 @@ struct DrawingView: View {
                         .allowsHitTesting(false)
                     }
                 }
+                .overlay(alignment: .topLeading) {
+                    Label("Zone active", systemImage: "pencil.tip")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding([.leading, .top], 24)
+                }
+                .padding(.horizontal, 24)
             } else {
                 disconnectedPlaceholder
             }
@@ -76,3 +76,12 @@ struct DrawingView: View {
         .padding(40)
     }
 }
+
+#Preview("Version non-connecté") {
+    DrawingView(connectivity: MockConnectivityManager(shouldBeConnected: false))
+}
+
+#Preview("Version connecté (simulation)") {    
+    DrawingView(connectivity: MockConnectivityManager(shouldBeConnected: true))
+}
+

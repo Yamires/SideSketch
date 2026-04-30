@@ -4,13 +4,17 @@ import Network
 import Combine
 
 @MainActor
-final class ConnectivityManager: ObservableObject {
+final class ConnectivityManager: ObservableObject, ConnectivityManaging {
 
-    @Published var connectionStatus: String = "Déconnecté"
-    @Published var isConnected: Bool = false
+    @Published var connectionStatus: ConnectionStatus = .disconnected
 
     private var connection: NWConnection?
     private let port: NWEndpoint.Port = 12345
+    
+    var isConnected: Bool {
+        if case .connected = connectionStatus { return true}
+        return false
+    }
 
     func connect(to ipAddress: String) {
         disconnect()
@@ -30,16 +34,13 @@ final class ConnectivityManager: ObservableObject {
                 guard let self else { return }
                 switch state {
                 case .ready:
-                    self.isConnected = true
-                    self.connectionStatus = "Connecté à \(ipAddress)"
+                    self.connectionStatus = .connected(ipAddress: ipAddress)
                 case .waiting(let error):
-                    self.connectionStatus = "En attente… (\(error.localizedDescription))"
+                    self.connectionStatus = .waiting(errorLiteral: error.localizedDescription)
                 case .failed(let error):
-                    self.isConnected = false
-                    self.connectionStatus = "Échec : \(error.localizedDescription)"
+                    self.connectionStatus = .failed(errorLiteral: error.localizedDescription)
                 case .cancelled:
-                    self.isConnected = false
-                    self.connectionStatus = "Déconnecté"
+                    self.connectionStatus = .disconnected
                 default:
                     break
                 }
@@ -47,14 +48,13 @@ final class ConnectivityManager: ObservableObject {
         }
 
         connection?.start(queue: .global(qos: .userInteractive))
-        connectionStatus = "Connexion à \(ipAddress)…"
+        connectionStatus = .connected(ipAddress: ipAddress)
     }
 
     func disconnect() {
         connection?.cancel()
         connection = nil
-        isConnected = false
-        connectionStatus = "Déconnecté"
+        connectionStatus = .disconnected
     }
 
 
@@ -74,3 +74,4 @@ final class ConnectivityManager: ObservableObject {
         )
     }
 }
+
